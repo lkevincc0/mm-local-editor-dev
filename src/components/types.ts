@@ -178,7 +178,7 @@ export interface Feedback {
 }
 
 // Feedback about the model as a whole, not tied to any single node. Shown in
-// the feedback panel and optionally rendered onto the exported PNG.
+// the feedback panel; unlike per-goal feedback it is not drawn onto exports.
 export interface OverallFeedback {
   author: string;
   content: string;

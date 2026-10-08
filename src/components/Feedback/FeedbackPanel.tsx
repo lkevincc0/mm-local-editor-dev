@@ -270,10 +270,6 @@ const FeedbackPanel: React.FC<FeedbackPanelProps> = ({
                     <span className="feedback-overall-label">
                         Overall Feedback
                     </span>
-
-                    <span className="feedback-overall-hint">
-                        Added to the exported PNG
-                    </span>
                 </div>
 
                 <textarea

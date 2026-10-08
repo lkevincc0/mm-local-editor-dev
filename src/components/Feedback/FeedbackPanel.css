@@ -698,12 +698,6 @@
     text-transform: uppercase;
 }
 
-.feedback-overall-hint {
-    color: var(--muted);
-
-    font-size: 10.5px;
-}
-
 .feedback-overall-textarea {
     width: 100%;
 

@@ -4,6 +4,7 @@
 import {describe, expect, it} from "vitest";
 
 import type {Feedback} from "../types";
+import {EXPORT_COLORS, exportAvatarColor, exportAvatarInitial} from "./exportPalette";
 import {
     PNG_FEEDBACK_PANEL_GAP,
     PNG_FEEDBACK_PANEL_WIDTH,
@@ -19,8 +20,18 @@ import {
 
 // Deterministic stand-in for canvas text measurement: 7px per character at
 // any font size, which is all these layout functions rely on.
+//
+// Every paint call also snapshots the colours in force, so a test can assert
+// what a shape was filled with rather than just that something was filled.
 const createMockContext = () => {
-    const calls: {method: string; args: unknown[]}[] = [];
+    type Call = {
+        method: string;
+        args: unknown[];
+        fillStyle?: string;
+        strokeStyle?: string;
+        lineWidth?: number;
+    };
+    const calls: Call[] = [];
 
     const ctx = {
         font: "",
@@ -31,7 +42,11 @@ const createMockContext = () => {
         textBaseline: "",
         measureText: (text: string) => ({width: text.length * 7}),
         fillText: (...args: unknown[]) => {
-            calls.push({method: "fillText", args});
+            calls.push({
+                method: "fillText",
+                args,
+                fillStyle: ctx.fillStyle
+            });
         },
         beginPath: () => {
             calls.push({method: "beginPath", args: []});
@@ -45,20 +60,41 @@ const createMockContext = () => {
         lineTo: (...args: unknown[]) => {
             calls.push({method: "lineTo", args});
         },
+        arcTo: (...args: unknown[]) => {
+            calls.push({method: "arcTo", args});
+        },
         closePath: () => {
             calls.push({method: "closePath", args: []});
         },
         fill: () => {
-            calls.push({method: "fill", args: []});
+            calls.push({
+                method: "fill",
+                args: [],
+                fillStyle: ctx.fillStyle
+            });
         },
         stroke: () => {
-            calls.push({method: "stroke", args: []});
+            calls.push({
+                method: "stroke",
+                args: [],
+                strokeStyle: ctx.strokeStyle,
+                lineWidth: ctx.lineWidth
+            });
         },
         fillRect: (...args: unknown[]) => {
-            calls.push({method: "fillRect", args});
+            calls.push({
+                method: "fillRect",
+                args,
+                fillStyle: ctx.fillStyle
+            });
         },
         strokeRect: (...args: unknown[]) => {
-            calls.push({method: "strokeRect", args});
+            calls.push({
+                method: "strokeRect",
+                args,
+                strokeStyle: ctx.strokeStyle,
+                lineWidth: ctx.lineWidth
+            });
         },
         save: () => {
             calls.push({method: "save", args: []});
@@ -68,7 +104,10 @@ const createMockContext = () => {
         }
     };
 
-    return {ctx: ctx as unknown as CanvasRenderingContext2D, calls};
+    const filled = () =>
+        calls.filter((call) => call.fillStyle).map((call) => call.fillStyle);
+
+    return {ctx: ctx as unknown as CanvasRenderingContext2D, calls, filled};
 };
 
 const makeFeedback = (overrides: Partial<Feedback> = {}): Feedback => ({
@@ -316,41 +355,89 @@ describe("getFeedbackNodeBadges", () => {
 });
 
 describe("drawing", () => {
-    it("draws one numbered badge per node", () => {
-        const {ctx, calls} = createMockContext();
-
-        drawFeedbackNodeBadges(ctx, [
-            {number: 1, x: 10, y: 20},
-            {number: 2, x: 30, y: 40}
-        ]);
-
-        const texts = calls
-            .filter((call) => call.method === "fillText")
-            .map((call) => call.args[0]);
-
-        expect(texts).toEqual(["1", "2"]);
-        expect(calls.filter((call) => call.method === "arc")).toHaveLength(2);
-    });
-
-    it("paints the panel and its title at the requested offset", () => {
-        const {ctx, calls} = createMockContext();
+    const renderPanel = (feedbacks: Partial<Feedback>[]) => {
+        const {ctx, calls, filled} = createMockContext();
         const layout = calculateFeedbackPanelLayout(
             ctx,
-            groupFeedbackByNode([makeFeedback()])
+            groupFeedbackByNode(feedbacks.map((feedback) => makeFeedback(feedback)))
         );
 
         drawFeedbackPanel(ctx, layout, 824, 600);
+
+        return {ctx, calls, filled, layout};
+    };
+
+    const drawnTexts = (calls: {method: string; args: unknown[]}[]) =>
+        calls
+            .filter((call) => call.method === "fillText")
+            .map((call) => call.args[0]);
+
+    it("draws one numbered badge per node, ringed in the graph's colour", () => {
+        const {ctx, calls} = createMockContext();
+
+        drawFeedbackNodeBadges(
+            ctx,
+            [
+                {number: 1, x: 10, y: 20},
+                {number: 2, x: 30, y: 40}
+            ],
+            "#ff0000"
+        );
+
+        expect(drawnTexts(calls)).toEqual(["1", "2"]);
+        // A disc plus a ring for each badge.
+        expect(calls.filter((call) => call.method === "arc")).toHaveLength(4);
+        expect(ctx.strokeStyle).toBe("#ff0000");
+        expect(ctx.lineWidth).toBe(2.5);
+    });
+
+    it("paints the panel background and its header at the requested offset", () => {
+        const {calls, layout} = renderPanel([{}]);
 
         const panelRect = calls.find(
             (call) => call.method === "fillRect" && call.args[0] === 824
         );
         expect(panelRect?.args).toEqual([824, 0, layout.width, 600]);
 
-        const texts = calls
-            .filter((call) => call.method === "fillText")
-            .map((call) => call.args[0]);
-        expect(texts).toContain("Feedback (1)");
+        const texts = drawnTexts(calls);
+        expect(texts).toContain("Goal feedback");
+        // The eyebrow is drawn one character at a time to control tracking.
+        expect(texts.join("")).toContain("REVIEW");
+        expect(texts).toContain(layout.meta);
     });
+
+    it("labels each goal section with its number and goal name", () => {
+        const {calls} = renderPanel([{nodeLabel: "Do1"}]);
+
+        const texts = drawnTexts(calls);
+        expect(texts).toContain("Do1");
+        expect(texts).toContain("1");
+    });
+
+    it("marks each comment with a status pill in its own colour", () => {
+        expect(renderPanel([{status: "open"}]).filled()).toContain(
+            EXPORT_COLORS.openBackground
+        );
+        expect(renderPanel([{status: "resolved"}]).filled()).toContain(
+            EXPORT_COLORS.resolvedBackground
+        );
+    });
+
+    it("gives the author a disc in their own colour and initial", () => {
+        const {calls, filled} = renderPanel([{author: "Zecheng"}]);
+
+        expect(filled()).toContain(exportAvatarColor("Zecheng"));
+        expect(drawnTexts(calls)).toContain(exportAvatarInitial("Zecheng"));
+    });
+
+    it.each(["1970-01-01T00:00:00.000Z", "", "not-a-date"])(
+        "leaves the date off a comment stamped %s",
+        (createdAt) => {
+            expect(renderPanel([{createdAt}]).layout.groups[0].cards[0].date).toBe(
+                ""
+            );
+        }
+    );
 });
 
 describe("createGraphToExportPointConverter", () => {

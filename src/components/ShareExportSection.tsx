@@ -67,7 +67,6 @@ const ShareExportSection: React.FC<ShareExportSectionProps> = ({
     const {currentProject} = useProjectContext();
     const {feedbacks, overallFeedback} = useFeedbackContext();
 
-    const [includeOverallFeedback, setIncludeOverallFeedback] = useState(true);
     const [includeNodeFeedback, setIncludeNodeFeedback] = useState(true);
     const [errorModal, setErrorModal] = useState<ErrorModalProps>({
         show: false,
@@ -103,7 +102,6 @@ const ShareExportSection: React.FC<ShareExportSectionProps> = ({
 
         exportGraphAsPNG(graph, {
             projectData: buildProjectData(),
-            includeOverallFeedback,
             includeNodeFeedback
         });
     };
@@ -131,14 +129,6 @@ const ShareExportSection: React.FC<ShareExportSectionProps> = ({
                     </div>
                 </div>
             </div>
-
-            <ExportToggle
-                label="Include overall feedback?"
-                hint="Add it in the Feedback panel first"
-                disabled={!overallFeedback?.content.trim()}
-                checked={includeOverallFeedback}
-                onChange={setIncludeOverallFeedback}
-            />
 
             <ExportToggle
                 label="Include goal feedback?"
