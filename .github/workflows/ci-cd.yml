@@ -47,7 +47,8 @@ jobs:
           # established". Bind the dev server to 127.0.0.1 explicitly and let
           # Cypress talk to the same address.
           start: npm run dev:ci
-          wait-on: 'http-get://127.0.0.1:5173/'
+          # Plain http:// only: the action treats any other scheme as a file path.
+          wait-on: 'http://127.0.0.1:5173/'
           wait-on-timeout: 120
         env:
           CYPRESS_BASE_URL: http://127.0.0.1:5173
