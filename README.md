@@ -87,6 +87,7 @@ bun run dev
 | Command | Purpose |
 | --- | --- |
 | `npm run dev` | Start the Vite development server with hot reload. |
+| `npm run dev:ci` | Start the dev server bound to `127.0.0.1:5173` with a strict port; used by CI and headless Cypress runs, because `vite` otherwise binds `localhost` to IPv6 only. |
 | `npm run build` | Create a production build in `dist/`. |
 | `npm run preview` | Preview the production build locally. |
 | `npm run lint` | Run ESLint for TypeScript and TSX files with zero warnings allowed. |
