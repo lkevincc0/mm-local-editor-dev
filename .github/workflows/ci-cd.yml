@@ -28,7 +28,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Dependencies
         run: npm ci
@@ -43,49 +43,4 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           start: npm run dev
-          wait-on: 'http://localhost:5173/mm-local-editor/'
-  # =========================================================================
-  # CD JOB: Deploy to GitHub Pages
-  # Runs ONLY on PUSH to the 'develop' branch (which happens after a successful merge)
-  # -------------------------------------------------------------------------
-  deploy:
-    name: Deploy to GitHub Pages
-    # Requires the CI job to pass first
-    needs: ci
-    
-    # This condition ensures deployment runs ONLY when a push occurs 
-    # directly to the 'develop' branch (which covers merges).
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    
-    runs-on: ubuntu-latest
-
-    # The deploy step pushes the built site to the gh-pages branch, so the
-    # job's GITHUB_TOKEN needs write access to repository contents.
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20' 
-          
-      - name: Install Dependencies and gh-pages
-        # Need to install to access `gh-pages` script
-        run: npm ci
-
-
-      - name: Configure Git Credentials for Custom Deployment 
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Set up push credentials 
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-          
-      - name: Deploy to GitHub Pages
-        run: npm run deploy
+          wait-on: 'http://localhost:5173/'

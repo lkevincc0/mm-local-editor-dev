@@ -2,7 +2,7 @@
 
 AMMBER is a local-first web application for creating motivational models and collecting feedback on them. It is built with React, TypeScript, Vite, and maxGraph. Projects are stored in the user's browser, so the application does not require a backend service or shared database.
 
-[Open the team deployment](https://lkevincc0.github.io/mm-local-editor/)
+[Open the team deployment](https://lkevincc0.github.io/mm-local-editor-dev/)
 
 For background on the modelling method, see [Motivational Modelling](https://www.leonsterling.com/aboutmotivationalmodelling). A user manual is also available in [`public/papers/AMMBER_User_Manual.pdf`](public/papers/AMMBER_User_Manual.pdf).
 
@@ -118,9 +118,11 @@ Unit and component tests are colocated with the source as `*.test.ts` and `*.tes
 
 The repository contains GitHub Actions workflows under `.github/workflows/`:
 
-- `ci-cd.yml` runs Vitest, a production build, and Cypress on every push and on pull requests targeting `develop`. A successful push to `develop` is then published to GitHub Pages.
-- `deploy.yml` builds and publishes `main` to GitHub Pages.
+- `ci-cd.yml` runs Vitest, a production build, and Cypress on every push and on pull requests targeting `develop`.
+- `deploy.yml` builds, tests, and publishes `develop` to the `gh-pages` branch, which GitHub Pages serves at <https://lkevincc0.github.io/mm-local-editor-dev/>.
 - `release-version.yml` manages the repository's release-version workflow.
+
+The site is a GitHub Pages *project* site, so it lives under `/<repository>/`. The subpath comes from the `base` option in `vite.config.ts` (default `/mm-local-editor-dev/`) and is read back by `import.meta.env.BASE_URL` in `src/components/utils/basename.ts`. If the repository is renamed, update `PRODUCTION_BASE` in `vite.config.ts` or set the `VITE_BASE_PATH` environment variable for the build, otherwise the router will not match any route and the page stays blank.
 
 The Vite production output is written to `dist/`. Normal team deployments should go through GitHub Actions; `npm run deploy` is available for authorised manual publication.
 
