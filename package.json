@@ -6,6 +6,7 @@
   "homepage": "https://lkevincc0.github.io/mm-local-editor-dev/",
   "scripts": {
     "dev": "vite",
+    "dev:ci": "vite --host 127.0.0.1 --port 5173 --strictPort",
     "build": "vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
