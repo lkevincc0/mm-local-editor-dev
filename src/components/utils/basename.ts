@@ -1,16 +1,23 @@
-// The app is deployed to GitHub Pages under the /mm-local-editor/ subpath, but
-// may also be opened directly at the root (e.g. http://localhost:5173/ or
-// http://<ip>:<port>/). React Router renders nothing when the URL does not start
-// with the basename, so only apply it when the current path actually needs it.
-export const getBasename = (pathname: string = window.location.pathname): string =>
-	pathname.startsWith("/mm-local-editor") ? "/mm-local-editor" : "/";
+// The app is deployed as a GitHub Pages project site, e.g.
+// https://<user>.github.io/mm-local-editor-dev/, so React Router and the files
+// in public/ need to know the deployment subpath. Vite exposes the `base` from
+// vite.config.ts as import.meta.env.BASE_URL, which keeps the dev server (root)
+// and the production build (repository subpath) in sync automatically — never
+// hardcode the repository name again.
 
-// Static assets in public/ must be prefixed with the deploy basename, otherwise
+// Returns "" for a root deployment and "/repo-name" for a project site.
+export const getDeployBase = (): string => {
+	const base = import.meta.env.BASE_URL;
+	if (!base || base === "/" || base === "./") {
+		return "";
+	}
+	return base.replace(/\/+$/, "");
+};
+
+export const getBasename = (): string => getDeployBase() || "/";
+
+// Static assets in public/ must be prefixed with the deploy base, otherwise
 // absolute paths like "/papers/x.pdf" resolve against the domain root and break
 // when the app is served from a subpath (e.g. GitHub Pages).
-export const assetUrl = (path: string): string => {
-	// Guard for non-browser environments (e.g. Vitest running in node).
-	const basename = typeof window === "undefined" ? "/" : getBasename();
-	const base = basename === "/" ? "" : basename;
-	return `${base}/${path.replace(/^\/+/, "")}`;
-};
+export const assetUrl = (path: string): string =>
+	`${getDeployBase()}/${path.replace(/^\/+/, "")}`;

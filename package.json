@@ -3,7 +3,7 @@
   "private": true,
   "version": "2025.2",
   "type": "module",
-  "homepage": "https://motivationalmodelling.github.io/mm-local-editor",
+  "homepage": "https://lkevincc0.github.io/mm-local-editor-dev/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

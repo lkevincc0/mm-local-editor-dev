@@ -1,9 +1,18 @@
 name: Deploy
 
+# The repository deploys from `develop` (there is no `main` branch), so this
+# workflow previously never ran and the gh-pages branch kept an old, hand-made
+# build that still pointed at the /mm-local-editor/ path.
 on:
   push:
     branches:
-      - main
+      - develop
+  workflow_dispatch:
+
+# Keep the deployment serialised so two pushes cannot race on gh-pages.
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -17,10 +26,14 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
+          cache: npm
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test -- --run
 
       - name: Build project
         run: npm run build
@@ -35,7 +48,10 @@ jobs:
     name: Deploy
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # The deploy step pushes the built site to the gh-pages branch, so the
+    # job's GITHUB_TOKEN needs write access to repository contents.
+    permissions:
+      contents: write
 
     steps:
       - name: Download artifact
@@ -49,3 +65,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist
+          # Replace the branch content instead of merging into the previous
+          # (stale, hand-made) deployment, so removed files disappear too.
+          force_orphan: true
+          commit_message: "chore: deploy ${{ github.sha }}"
