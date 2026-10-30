@@ -1,18 +1,26 @@
 import {useEffect, useState} from "react";
+import {readStorage, writeStorage} from "./storage";
 
 // Define a generic type for the initial value
 type InitialValueType<T> = T | (() => T);
 
-const isEmptyObject = (obj: object) =>
-  obj && typeof obj === "object" && Object.keys(obj).length === 0;
+const isEmptyObject = (obj: unknown): obj is object =>
+  typeof obj === "object" && obj !== null && Object.keys(obj).length === 0;
 
 const getStoredData = <T,>(
 	key: string,
 	initialValue: InitialValueType<T>
 ): T => {
-	const storedData = localStorage.getItem(key);
+	const storedData = readStorage(key);
+	let data: T | null = null;
 
-	const data = storedData ? JSON.parse(storedData) : null;
+	if (storedData) {
+		try {
+			data = JSON.parse(storedData) as T;
+		} catch {
+			data = null;
+		}
+	}
 
 	if (initialValue instanceof Function) {
 		return initialValue();
@@ -37,7 +45,7 @@ const useLocalStorage = <T,>(
 
 	// Auto save data to the local storage
 	useEffect(() => {
-		localStorage.setItem(key, JSON.stringify(value));
+		writeStorage(key, JSON.stringify(value));
 	}, [key, value]);
 
 	return [value, setValue];
