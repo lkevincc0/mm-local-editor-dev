@@ -8,6 +8,7 @@ import CanvasToolbar from "./CanvasToolbar";
 import {GraphProvider} from "./context/GraphContext";
 import {FeedbackProvider} from "./context/FeedbackContext";
 import {useTheme} from "./context/ThemeContext";
+import {readStorage, writeStorage} from "./utils/storage";
 
 import ClassicProgressBar, {ClassicStep} from "./classic/ClassicProgressBar";
 import ClassicSectionPanel from "./classic/ClassicSectionPanel";
@@ -22,7 +23,7 @@ const readPanelDock = (
 ): PanelDock => {
     try {
         const saved = JSON.parse(
-            localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY) ?? "{}"
+            readStorage(PANEL_LAYOUT_STORAGE_KEY) ?? "{}"
         ) as Record<string, unknown>;
 
         return saved[panel] === "left" || saved[panel] === "right"
@@ -57,7 +58,7 @@ const ProjectEdit: React.FC = () => {
 
 
     useEffect(() => {
-        localStorage.setItem(
+        writeStorage(
             PANEL_LAYOUT_STORAGE_KEY,
             JSON.stringify({
                 goal: goalDock,
